@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package identity;
+
+service IdentityService {
+  // Generates a single-use SIWE nonce for a wallet address
+  rpc GetNonce (GetNonceRequest) returns (GetNonceResponse);
+
+  // Verifies EIP-4361 signature, finds/registers user and returns tokens
+  rpc VerifySiwe (VerifySiweRequest) returns (AuthResponse);
+
+  // Rotates Access & Refresh tokens
+  rpc RefreshTokens (RefreshTokensRequest) returns (AuthResponse);
+
+  // Revokes a user session
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+
+  // Query user profile
+  rpc GetUserById (GetUserByIdRequest) returns (UserResponse);
+  rpc GetUserByAddress (GetUserByAddressRequest) returns (UserResponse);
+
+  // Internal token validation
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message GetNonceRequest {
+  string wallet_address = 1;
+}
+
+message GetNonceResponse {
+  string nonce = 1;
+  int64 expires_at = 2; // Unix timestamp in seconds
+}
+
+message VerifySiweRequest {
+  string message = 1;   // Full EIP-4361 string
+  string signature = 2; // 0x... hex signature
+}
+
+message RefreshTokensRequest {
+  string refresh_token = 1;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3; // In seconds
+  UserResponse user = 4;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+  string user_id = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message GetUserByIdRequest {
+  string user_id = 1;
+}
+
+message GetUserByAddressRequest {
+  string wallet_address = 1;
+}
+
+message UserResponse {
+  string id = 1;
+  string wallet_address = 2;
+  string role = 3;
+  bool is_active = 4;
+  int64 created_at = 5; // Unix timestamp in seconds
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool is_valid = 1;
+  string user_id = 2;
+  string wallet_address = 3;
+  string role = 4;
+}
