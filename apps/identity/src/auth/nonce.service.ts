@@ -30,7 +30,7 @@ export class NonceService {
 
   /**
    * Generates a cryptographically secure SIWE nonce for a wallet address
-   * and stores it in Redis with a 5-minute Time-To-Live (TTL).
+   * and stores it with a 5-minute Time-To-Live (TTL).
    *
    * @param walletAddress - The EVM wallet address requesting authentication
    * @returns Object containing the generated nonce and expiration timestamp in Unix seconds
@@ -46,9 +46,9 @@ export class NonceService {
   }
 
   /**
-   * Atomically validates and consumes a SIWE nonce from Redis.
+   * Atomically validates and consumes a SIWE nonce.
    *
-   * By using atomic GETDEL / Lua script in Redis, the nonce is deleted
+   * By using atomic GETDEL command, the nonce is deleted
    * on the first read, guaranteeing that a signature cannot be replayed.
    *
    * @param walletAddress - The EVM wallet address to validate the nonce for

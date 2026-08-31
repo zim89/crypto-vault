@@ -1,7 +1,7 @@
-import { Catch, RpcExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
-import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
+import { Catch, RpcExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import { Observable, throwError } from 'rxjs';
 
 @Catch()
 export class GrpcExceptionFilter implements RpcExceptionFilter<unknown> {

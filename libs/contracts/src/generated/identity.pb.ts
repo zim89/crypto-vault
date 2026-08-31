@@ -5,10 +5,10 @@
 // source: identity.proto
 
 /* eslint-disable */
-import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
-import { Observable } from "rxjs";
+import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
 
-export const protobufPackage = "identity";
+export const protobufPackage = 'identity';
 
 export interface GetNonceRequest {
   walletAddress: string;
@@ -76,7 +76,7 @@ export interface ValidateTokenResponse {
   role: string;
 }
 
-export const IDENTITY_PACKAGE_NAME = "identity";
+export const IDENTITY_PACKAGE_NAME = 'identity';
 
 export interface IdentityServiceClient {
   /** Generates a single-use SIWE nonce for a wallet address */
@@ -109,25 +109,37 @@ export interface IdentityServiceClient {
 export interface IdentityServiceController {
   /** Generates a single-use SIWE nonce for a wallet address */
 
-  getNonce(request: GetNonceRequest): Promise<GetNonceResponse> | Observable<GetNonceResponse> | GetNonceResponse;
+  getNonce(
+    request: GetNonceRequest,
+  ): Promise<GetNonceResponse> | Observable<GetNonceResponse> | GetNonceResponse;
 
   /** Verifies EIP-4361 signature, finds/registers user and returns tokens */
 
-  verifySiwe(request: VerifySiweRequest): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
+  verifySiwe(
+    request: VerifySiweRequest,
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
   /** Rotates Access & Refresh tokens */
 
-  refreshTokens(request: RefreshTokensRequest): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
+  refreshTokens(
+    request: RefreshTokensRequest,
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
   /** Revokes a user session */
 
-  logout(request: LogoutRequest): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
+  logout(
+    request: LogoutRequest,
+  ): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
 
   /** Query user profile */
 
-  getUserById(request: GetUserByIdRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  getUserById(
+    request: GetUserByIdRequest,
+  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  getUserByAddress(request: GetUserByAddressRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  getUserByAddress(
+    request: GetUserByAddressRequest,
+  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
   /** Internal token validation */
 
@@ -139,24 +151,28 @@ export interface IdentityServiceController {
 export function IdentityServiceControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
-      "getNonce",
-      "verifySiwe",
-      "refreshTokens",
-      "logout",
-      "getUserById",
-      "getUserByAddress",
-      "validateToken",
+      'getNonce',
+      'verifySiwe',
+      'refreshTokens',
+      'logout',
+      'getUserById',
+      'getUserByAddress',
+      'validateToken',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("IdentityService", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod('IdentityService', method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("IdentityService", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod('IdentityService', method)(
+        constructor.prototype[method],
+        method,
+        descriptor,
+      );
     }
   };
 }
 
-export const IDENTITY_SERVICE_NAME = "IdentityService";
+export const IDENTITY_SERVICE_NAME = 'IdentityService';

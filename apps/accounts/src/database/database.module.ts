@@ -18,7 +18,7 @@ export type DrizzleDB = PostgresJsDatabase<typeof schema>;
       useFactory: (configService: ConfigService) => {
         const connectionString =
           configService.get<string>(ENV_KEYS.dbUrl) ||
-          `postgres://${configService.get<string>(ENV_KEYS.dbUser, 'postgres')}:${configService.get<string>(ENV_KEYS.dbPassword, 'postgres')}@${configService.get<string>(ENV_KEYS.dbHost, 'localhost')}:${configService.get<number>(ENV_KEYS.dbPort, 5432)}/${configService.get<string>(ENV_KEYS.dbName, 'identity_db')}`;
+          `postgres://${configService.get<string>(ENV_KEYS.dbUser, 'postgres')}:${configService.get<string>(ENV_KEYS.dbPassword, 'postgres')}@${configService.get<string>(ENV_KEYS.dbHost, 'localhost')}:${configService.get<number>(ENV_KEYS.dbPort, 5432)}/${configService.get<string>(ENV_KEYS.dbName, 'accounts_db')}`;
 
         return postgres(connectionString, {
           max: configService.get<number>(ENV_KEYS.dbMaxConnections, 10),

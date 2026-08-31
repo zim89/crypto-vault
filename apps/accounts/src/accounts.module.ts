@@ -1,10 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AccountsController } from './accounts.controller';
-import { AccountsService } from './accounts.service';
+import { ConfigModule } from '@nestjs/config';
+import { BalancesModule } from './balances/balances.module';
+import { envValidationSchema } from './config/env.validation';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
-  imports: [],
-  controllers: [AccountsController],
-  providers: [AccountsService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
+    }),
+    DatabaseModule,
+    BalancesModule,
+  ],
 })
 export class AccountsModule {}

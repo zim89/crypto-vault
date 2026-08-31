@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { getAddress, isAddress } from 'viem';
-import { UsersRepository } from './users.repository';
 import { User } from '../database/schema/users.schema';
 import { USERS_ERRORS } from './users.constants';
+import { UsersRepository } from './users.repository';
 
 /**
  * Service managing user domain operations:

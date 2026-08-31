@@ -1,12 +1,12 @@
 import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
-import { parseSiweMessage } from 'viem/siwe';
 import { verifyMessage, Hex } from 'viem';
-import { UsersService } from '../users/users.service';
-import { User } from '../database/schema/users.schema';
+import { parseSiweMessage } from 'viem/siwe';
 import { AuthResponse, ValidateTokenResponse } from '@app/contracts';
+import { User } from '../database/schema/users.schema';
+import { UsersService } from '../users/users.service';
+import { AUTH_ERRORS, AUTH_LOGS } from './auth.constants';
 import { NonceService, GeneratedNonce } from './nonce.service';
 import { GeneratedTokens, TokenService } from './token.service';
-import { AUTH_ERRORS, AUTH_LOGS } from './auth.constants';
 
 /**
  * Service orchestrating Web3 authentication workflows:

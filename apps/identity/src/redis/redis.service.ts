@@ -1,136 +1,146 @@
-import { Injectable, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { GlideClient, TimeUnit } from '@valkey/valkey-glide';
 import { ENV_KEYS } from '../config';
 
 /**
- * Service managing Redis connection and operations:
- * - Connection lifecycle and retry strategies.
- * - Atomic SIWE nonce caching and single-use retrieval (Replay Attack prevention).
- * - General-purpose string caching with optional TTL.
+ * Service managing In-Memory Redis/Valkey cache and operations:
+ * - Connection lifecycle via high-performance Valkey GLIDE driver.
+ * - Atomic SIWE nonce caching and single-use retrieval via GETDEL (Replay Attack prevention).
+ * - General-purpose key-value caching with optional TTL.
  */
 @Injectable()
-export class RedisService implements OnModuleDestroy {
-  private readonly client: Redis;
+export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private client: GlideClient | null = null;
   private readonly logger = new Logger(RedisService.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.initClient();
+  }
+
+  /**
+   * Initializes the Redis/Valkey GLIDE client connection.
+   */
+  private async initClient(): Promise<void> {
     const host = this.configService.get<string>(ENV_KEYS.redisHost, 'localhost');
     const port = Number(this.configService.get<number>(ENV_KEYS.redisPort, 6379));
     const password = this.configService.get<string>(ENV_KEYS.redisPassword) || undefined;
 
-    this.client = new Redis({
-      host,
-      port,
-      password,
-      lazyConnect: false,
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 200, 2000);
-        return delay;
-      },
-    });
+    try {
+      this.client = await GlideClient.createClient({
+        addresses: [{ host, port }],
+        credentials: password ? { password } : undefined,
+        requestTimeout: 2000,
+      });
 
-    this.client.on('connect', () => {
-      this.logger.log(`Connected to Redis at ${host}:${port}`);
-    });
-
-    this.client.on('error', (err) => {
-      this.logger.error(`Redis connection error: ${err.message}`);
-    });
+      this.logger.log(`Connected to Redis/Valkey at ${host}:${port} via GLIDE`);
+    } catch (err: unknown) {
+      this.logger.error(`Redis/Valkey connection error: ${(err as Error).message}`);
+    }
   }
 
   /**
-   * Retrieves the raw `ioredis` client instance for advanced operations.
-   *
-   * @returns The active Redis client instance
+   * Retrieves the connected GlideClient instance.
    */
-  getClient(): Redis {
+  async getClient(): Promise<GlideClient> {
+    if (!this.client) {
+      await this.initClient();
+    }
+    if (!this.client) {
+      throw new Error('Failed to establish Redis/Valkey GLIDE connection');
+    }
     return this.client;
   }
 
   /**
-   * Stores a SIWE nonce for a wallet address with an expiration time.
+   * Stores a SIWE nonce for a wallet address with an expiration time in seconds.
    *
    * @param walletAddress - The EVM wallet address associated with the nonce
    * @param nonce - The cryptographic random nonce string
    * @param ttlSeconds - Time-to-live in seconds (default: 300 / 5 minutes)
    */
   async setNonce(walletAddress: string, nonce: string, ttlSeconds = 300): Promise<void> {
+    const client = await this.getClient();
     const key = `siwe:nonce:${walletAddress.toLowerCase()}`;
-    await this.client.set(key, nonce, 'EX', ttlSeconds);
+
+    await client.set(key, nonce, {
+      expiry: {
+        type: TimeUnit.Seconds,
+        count: ttlSeconds,
+      },
+    });
   }
 
   /**
    * Atomically retrieves and deletes a SIWE nonce to prevent replay attacks.
    *
-   * Utilizes the native Redis 6.2+ `GETDEL` command with an automatic fallback
-   * to an atomic Lua script for older Redis instances.
+   * Utilizes the native atomic `GETDEL` command.
    *
    * @param walletAddress - The EVM wallet address to retrieve the nonce for
    * @returns The stored nonce string, or `null` if expired or not found
    */
   async getAndDelNonce(walletAddress: string): Promise<string | null> {
+    const client = await this.getClient();
     const key = `siwe:nonce:${walletAddress.toLowerCase()}`;
-    try {
-      // Redis 6.2+ supports GETDEL natively
-      const nonce = (await this.client.call('GETDEL', key)) as string | null;
-      return nonce;
-    } catch {
-      // Fallback for older Redis versions via Lua script
-      const luaScript = `
-        local val = redis.call('get', KEYS[1])
-        if val then
-          redis.call('del', KEYS[1])
-        end
-        return val
-      `;
-      const nonce = (await this.client.eval(luaScript, 1, key)) as string | null;
-      return nonce;
-    }
+
+    const nonce = await client.getdel(key);
+    return typeof nonce === 'string' ? nonce : null;
   }
 
   /**
-   * Retrieves a string value by key from Redis.
+   * Retrieves a string value by key.
    *
    * @param key - Cache key
    * @returns The cached string value, or `null` if not found
    */
   async get(key: string): Promise<string | null> {
-    return this.client.get(key);
+    const client = await this.getClient();
+    const value = await client.get(key);
+    return typeof value === 'string' ? value : null;
   }
 
   /**
-   * Sets a key-value pair in Redis with optional expiration time.
+   * Sets a key-value pair with optional expiration time in seconds.
    *
    * @param key - Cache key
    * @param value - String value to store
    * @param ttlSeconds - Optional time-to-live in seconds
    */
   async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    const client = await this.getClient();
+
     if (ttlSeconds) {
-      await this.client.set(key, value, 'EX', ttlSeconds);
+      await client.set(key, value, {
+        expiry: {
+          type: TimeUnit.Seconds,
+          count: ttlSeconds,
+        },
+      });
     } else {
-      await this.client.set(key, value);
+      await client.set(key, value);
     }
   }
 
   /**
-   * Deletes a key from Redis.
+   * Deletes a key.
    *
    * @param key - Cache key to delete
    */
   async del(key: string): Promise<void> {
-    await this.client.del(key);
+    const client = await this.getClient();
+    await client.del([key]);
   }
 
   /**
    * Lifecycle hook executed on application shutdown.
-   * Gracefully terminates the Redis connection.
+   * Gracefully terminates the connection.
    */
-  async onModuleDestroy(): Promise<void> {
-    this.logger.log('Closing Redis connection...');
-    await this.client.quit();
+  onModuleDestroy(): void {
+    if (this.client) {
+      this.logger.log('Closing Redis/Valkey connection...');
+      this.client.close();
+    }
   }
 }

@@ -1,21 +1,20 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { Logger } from '@nestjs/common';
-import { join } from 'path';
-import { IdentityModule } from './identity.module';
 import { GrpcExceptionFilter } from '@app/common';
-import { protobufPackage } from '@app/contracts';
+import { IDENTITY_PACKAGE_NAME } from '@app/contracts';
+import { ENV_KEYS, IDENTITY_GRPC, IDENTITY_PROTO_PATH } from './config';
+import { IdentityModule } from './identity.module';
 
 async function bootstrap() {
   const logger = new Logger('IdentityBootstrap');
-  const grpcUrl = process.env.IDENTITY_GRPC_URL || '0.0.0.0:50051';
-  const protoPath = join(process.cwd(), 'libs/contracts/proto/identity.proto');
+  const grpcUrl = process.env[ENV_KEYS.identityGrpcUrl] ?? IDENTITY_GRPC.defaultUrl;
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(IdentityModule, {
     transport: Transport.GRPC,
     options: {
-      package: protobufPackage,
-      protoPath,
+      package: IDENTITY_PACKAGE_NAME,
+      protoPath: IDENTITY_PROTO_PATH,
       url: grpcUrl,
     },
   });

@@ -1,5 +1,4 @@
 import { Controller } from '@nestjs/common';
-import { UsersService } from './users.service';
 import {
   type GetUserByIdRequest,
   type GetUserByAddressRequest,
@@ -7,6 +6,7 @@ import {
   IdentityServiceControllerMethods,
 } from '@app/contracts';
 import { User } from '../database/schema/users.schema';
+import { UsersService } from './users.service';
 
 @Controller()
 @IdentityServiceControllerMethods()

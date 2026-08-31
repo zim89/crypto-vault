@@ -1,16 +1,16 @@
-import { Injectable, UnauthorizedException, Inject, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
+import { Injectable, UnauthorizedException, Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
+import { JwtPayload } from '@app/common';
+import { ENV_KEYS } from '../config';
 import { DRIZZLE_CLIENT } from '../database/database.constants';
 import type { DrizzleDB } from '../database/database.module';
 import { refreshTokens } from '../database/schema/refresh-tokens.schema';
 import { User } from '../database/schema/users.schema';
-import { JwtPayload } from '@app/common';
 import { UsersService } from '../users/users.service';
-import { ENV_KEYS } from '../config';
 import { AUTH_ERRORS, AUTH_LOGS } from './auth.constants';
 
 /**
